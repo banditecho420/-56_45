@@ -21,6 +21,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Install emulator runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpulse0 \
+            libasound2t64 \
+            libnss3 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxi6 \
+            libxtst6 \
+            libxrandr2 \
+            libxdamage1 \
+            libxrender1 \
+            libxext6 \
+            libx11-6 \
+            libwayland-client0 \
+            libgl1 \
+            libgl1-mesa-dri
+
       - name: Enable emulator tools on PATH
         run: |
           echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
@@ -42,6 +62,7 @@ jobs:
           key: android5-lollipop-${{ runner.os }}-${{ runner.arch }}
           restore-keys: |
             android5-lollipop-
+          save-always: true
 
       - name: Download Android 5 (Lollipop) emulator + system image
         if: steps.cache-android5.outputs.cache-hit != 'true'
