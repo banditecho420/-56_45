@@ -1,0 +1,66 @@
+name: Android 5 Emulator Cache
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-android5-emulator:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Enable emulator tools on PATH
+        run: |
+          echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+
+      - name: Cache Android 5 emulator + system image
+        id: cache-android5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}/emulator
+            ${{ env.ANDROID_HOME }}/system-images
+            ${{ env.ANDROID_HOME }}/platform-tools
+            ${{ env.ANDROID_HOME }}/cmdline-tools
+            ${{ env.ANDROID_HOME }}/platforms
+            ${{ env.ANDROID_HOME }}/licenses
+            ~/.android
+          key: android5-lollipop-${{ runner.os }}-${{ runner.arch }}
+          restore-keys: |
+            android5-lollipop-
+
+      - name: Download Android 5 (Lollipop) emulator + system image
+        if: steps.cache-android5.outputs.cache-hit != 'true'
+        run: |
+          set -euxo pipefail
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager --install \
+            "emulator" \
+            "platform-tools" \
+            "platforms;android-22" \
+            "system-images;android-22;default;x86_64"
+
+      - name: Create Android 5 AVD
+        run: |
+          set -euxo pipefail
+          echo "no" | avdmanager create avd -n android5 -k "system-images;android-22;default;x86_64" -f
+          avdmanager list avd
+
+      - name: Verify emulator binary
+        run: |
+          "$ANDROID_HOME/emulator/emulator" -version
+          echo "Android 5 emulator + system image cached for later use."
